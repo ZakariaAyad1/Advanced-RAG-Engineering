@@ -1,7 +1,6 @@
 """
 Advanced RAG Implementation with LlamaIndex
-===========================================
-This module demonstrates a production-grade RAG system using LlamaIndex,
+ RAG system using LlamaIndex,
 covering document ingestion, chunking, embedding, retrieval, and query processing.
 """
 
