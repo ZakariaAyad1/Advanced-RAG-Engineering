@@ -86,7 +86,7 @@ def load_documents(data_dir: str) -> List[Document]:
     Returns:
         List of Document objects with metadata
     """
-    # SimpleDirectoryReader automatically detects file types
+    # SimpleDirectoryReader automatically detects file types.
     reader = SimpleDirectoryReader(
         input_dir=data_dir,
         recursive=True,              # Scan subdirectories
