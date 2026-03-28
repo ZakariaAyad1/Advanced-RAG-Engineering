@@ -7,7 +7,7 @@ Improving retrieval quality is multi-dimensional:
 
 * **Better chunking**
 
-  * Semantic chunking instead of fixed size
+  * Semantic chunking instead of fixed size .
   * Maintain context boundaries (sections, headings)
 
 * **Hybrid retrieval**
