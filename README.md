@@ -258,3 +258,237 @@ Frameworks like AG-UI and LangGraph leverage function-based middleware for conci
 Strategic Implications
 This paradigm shift recasts middleware from data conduits to reasoning enablers, vital for scaling agentic AI beyond labs into production meshes that reason about their own connectivity. Early adopters harness it for cost-tuned batching and dormant channel pruning, though most linger at SAE Level 3 autonomy—multi-step execution with human oversight on edge cases. For developers wielding Jira or Salesforce integrations, embedding such middleware fortifies agentic workflows against brittleness, ensuring robust, auditable autonomy.
 
+
+
+
+
+------------------------------------------------------
+
+
+
+
+**Recall** mide si tu sistema de retrieval consigue **encontrar la información correcta**, aunque no necesariamente la coloque en primera posición.
+
+En RAG es una métrica fundamental.
+
+Supón que preguntas:
+
+```text
+How many vacation days do employees receive?
+```
+
+Sabemos que el documento correcto es:
+
+```text
+vacation_policy.md
+```
+
+Chroma devuelve:
+
+```text
+Result 1 → remote_work_policy.md
+Result 2 → vacation_policy.md       ← correcto
+Result 3 → expenses_policy.md
+```
+
+Aquí el documento correcto **sí fue recuperado**, pero está en posición 2.
+
+Por eso:
+
+[
+Recall@1 = 0
+]
+
+porque miramos únicamente el primer resultado:
+
+```text
+Top 1:
+remote_work_policy.md ❌
+```
+
+Pero:
+
+[
+Recall@2 = 1
+]
+
+porque entre los dos primeros está el correcto:
+
+```text
+Top 2:
+remote_work_policy.md
+vacation_policy.md       ✅
+```
+
+Y también:
+
+[
+Recall@3 = 1
+]
+
+---
+
+### ¿Qué significa la `K`?
+
+En:
+
+[
+Recall@K
+]
+
+`K` significa:
+
+> ¿Cuántos resultados recuperados voy a examinar?
+
+Por ejemplo:
+
+```text
+Recall@1 → ¿está la respuesta en el primer resultado?
+Recall@3 → ¿está entre los primeros 3?
+Recall@5 → ¿está entre los primeros 5?
+Recall@10 → ¿está entre los primeros 10?
+```
+
+En tu proyecto tienes:
+
+```python
+TOP_K = 4
+```
+
+Por tanto estás diciéndole aproximadamente a Chroma:
+
+```text
+Para cada pregunta, dame hasta los 4 chunks más cercanos.
+```
+
+---
+
+### Recall sobre muchas preguntas
+
+Supón que creamos 10 preguntas de evaluación.
+
+Para cada una conocemos el documento correcto.
+
+Resultados:
+
+```text
+Question 1 → correct document retrieved ✅
+Question 2 → correct document retrieved ✅
+Question 3 → correct document retrieved ❌
+Question 4 → correct document retrieved ✅
+Question 5 → correct document retrieved ✅
+Question 6 → correct document retrieved ❌
+Question 7 → correct document retrieved ✅
+Question 8 → correct document retrieved ✅
+Question 9 → correct document retrieved ✅
+Question 10 → correct document retrieved ✅
+```
+
+8 de 10.
+
+Entonces:
+
+[
+Recall@K =
+\frac{8}{10}
+=0.8
+]
+
+o:
+
+[
+Recall@K=80%
+]
+
+Interpretación:
+
+> Para el 80 % de las preguntas, el retriever consiguió incluir la evidencia correcta dentro de los primeros K resultados.
+
+---
+
+### ¿Por qué es tan importante en RAG?
+
+Porque imagina:
+
+```text
+User question
+     ↓
+Retriever
+     ↓
+❌ documento correcto NO recuperado
+     ↓
+LLM
+```
+
+El LLM no tiene la información necesaria.
+
+Aunque tengas un LLM excelente, le estás dando el contexto equivocado.
+
+En cambio:
+
+```text
+User question
+     ↓
+Retriever
+     ↓
+✅ documento correcto recuperado
+     ↓
+LLM
+```
+
+ahora el modelo **tiene la oportunidad** de responder correctamente.
+
+Por eso una regla útil es:
+
+[
+\boxed{\text{Si retrieval falla, generation empieza con desventaja.}}
+]
+
+---
+
+### Pero aumentar K no es gratis
+
+Podrías pensar:
+
+> Entonces pongo `TOP_K = 100` y tendré mucho recall.
+
+Probablemente aumentaría el recall, pero introducirías muchísimo ruido:
+
+```text
+Question
+   ↓
+100 chunks
+   ├── 1 relevante ✅
+   └── 99 irrelevantes ❌
+          ↓
+         LLM
+```
+
+Eso puede empeorar la respuesta, aumentar tokens, latencia y coste, y dificultar groundedness.
+
+Por eso existe un equilibrio:
+
+```text
+K pequeño
+→ menos ruido
+→ riesgo de perder evidencia
+
+K grande
+→ más probabilidad de encontrar evidencia
+→ más ruido
+```
+
+Y ahí aparece otra métrica importante: **precision**.
+
+Simplificando mucho:
+
+```text
+Recall:
+"¿Encontré lo que necesitaba?"
+
+Precision:
+"De todo lo que encontré, ¿cuánto era realmente relevante?"
+```
+
+En RAG necesitas ambas ideas. Un retriever que devuelve 1000 documentos y entre ellos está el correcto puede tener buen recall, pero ser prácticamente inútil por su pésima precisión.
+
